@@ -11,7 +11,15 @@
 #include <mbedtls/platform.h>
 #include <mbedtls/ssl.h>
 #include <string.h>
-#include "../../common/utility.h"
+#include "utility.h"
+
+#ifdef CLIENT_CERT_VERIFY_CALLBACK
+#define TLS_ENCLAVE TLS_CLIENT
+#endif
+
+#ifdef SERVER_CERT_VERIFY_CALLBACK
+#define TLS_ENCLAVE TLS_SERVER
+#endif
 
 oe_result_t enclave_claims_verifier_callback(
     oe_claim_t* claims,
@@ -34,14 +42,14 @@ int cert_verify_callback(
 
     (void)data;
 
-    printf(TLS_CLIENT "Received TLS certificate from server\n");
-    printf(TLS_CLIENT "cert_verify_callback with depth = %d\n", depth);
+    printf(TLS_ENCLAVE "Received TLS certificate\n");
+    printf(TLS_ENCLAVE "cert_verify_callback with depth = %d\n", depth);
 
     cert_buf = crt->raw.p;
     cert_size = crt->raw.len;
 
     printf(
-        TLS_CLIENT "crt->version = %d cert_size = %zu\n",
+        TLS_ENCLAVE "crt->version = %d cert_size = %zu\n",
         crt->version,
         cert_size);
 
@@ -53,13 +61,20 @@ int cert_verify_callback(
     if (result != OE_OK)
     {
         printf(
-            TLS_CLIENT "oe_verify_attestation_certificate_with_evidence failed "
-                       "with result = %s\n",
+            TLS_ENCLAVE
+            "oe_verify_attestation_certificate_with_evidence failed "
+            "with result = %s\n",
             oe_result_str(result));
         goto exit;
     }
     ret = 0;
     *flags = 0;
+
+#ifdef SERVER_CERT_VERIFY_CALLBACK
+    printf(TLS_SERVER "\n\n---------Establishing an Attested TLS channel "
+                      "between two enclaves---------\n\n");
+#endif
+
 exit:
     return ret;
 }
