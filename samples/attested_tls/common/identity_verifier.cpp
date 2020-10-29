@@ -4,19 +4,19 @@
 #include <openenclave/enclave.h>
 #include <stdlib.h>
 #include <string>
+#include "utility.h"
 
-#ifdef CLIENT_CERT_VERIFY_CALLBACK
+#if defined(CLIENT_CERT_VERIFY_CALLBACK)
 #include "tls_server_enc_mrenclave.h"
 #include "tls_server_enc_pubkey.h"
 #define TLS_ENCLAVE TLS_CLIENT
-#endif
-
-#ifdef SERVER_CERT_VERIFY_CALLBACK
+#elif defined(SERVER_CERT_VERIFY_CALLBACK)
 #include "tls_client_enc_pubkey.h"
 #define TLS_ENCLAVE TLS_SERVER
+#else
+#error \
+    "Either one of compile time flags CLIENT_CERT_VERIFY_CALLBACK or SERVER_CERT_VERIFY_CALLBACK should be defined"
 #endif
-
-#include "utility.h"
 
 oe_result_t enclave_claims_verifier_callback(
     oe_claim_t* claims,
@@ -63,14 +63,14 @@ oe_result_t enclave_claims_verifier_callback(
             claim->value_size);
         goto exit;
     }
-#ifdef SERVER_CERT_VERIFY_CALLBACK
-    printf(TLS_CLIENT "\nunique_id:\n");
+#if defined(SERVER_CERT_VERIFY_CALLBACK)
+    printf(TLS_ENCLAVE "\nunique_id:\n");
     for (size_t i = 0; i < claim->value_size; i++)
         printf("0x%0x ", (uint8_t)claim->value[i]);
     printf("\n");
 #endif
 
-#ifdef CLIENT_CERT_VERIFY_CALLBACK
+#if defined(CLIENT_CERT_VERIFY_CALLBACK)
     printf(TLS_ENCLAVE "\nverify unique_id:\n");
     for (size_t i = 0; i < claim->value_size; i++)
     {
